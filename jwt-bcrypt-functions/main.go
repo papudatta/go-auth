@@ -2,14 +2,17 @@ package main
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"log"
 	"time"
 
 	//"net/http"
 	"github.com/dgrijalva/jwt-go"
+	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -31,12 +34,7 @@ func (u *UserClaims) Valid() error {
 	return nil
 }
 
-var key = []byte{}
-
 func main() {
-	for i := 1; i <= 64; i++ {
-		key = append(key, byte(i))
-	}
 	fmt.Println(base64.StdEncoding.EncodeToString([]byte("user:pass")))
 	fmt.Println()
 	pass := "12340987abcd"
@@ -69,7 +67,7 @@ func compareP(password string, hashedPass []byte) error {
 }
 
 func signMsg(msg []byte) ([]byte, error) {
-	h := hmac.New(sha512.New, key)
+	h := hmac.New(sha512.New, keys[currentKid].key)
 
 	_, err := h.Write(msg)
 	if err != nil {
@@ -90,12 +88,39 @@ func checkSig(msg, sig []byte) (bool, error) {
 
 func craeteToken(c *UserClaims) (string, error) {
 	t := jwt.NewWithClaims(jwt.SigningMethodHS512, c)
-	signedToken, err := t.SignedString(key)
+	signedToken, err := t.SignedString(keys[currentKid].key)
 	if err != nil {
 		return "", fmt.Errorf("Error in createToken when signing token: %w", err)
 	}
 	return signedToken, nil
 }
+
+func generateNewKey() error {
+	newKey := make([]byte, 64)
+	_, err := io.ReadFull(rand.Reader, newKey)
+	if err != nil {
+		return fmt.Errorf("Error in generateNewKey!!: %w", err)
+	}
+	uid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("Error in generating uuid: %w", err)
+	}
+
+	keys[uid.String()] = key{
+		key:     newKey,
+		created: time.Now(),
+	}
+	currentKid = uid.String()
+	return nil
+}
+
+type key struct {
+	key     []byte
+	created time.Time
+}
+
+var currentKid = ""
+var keys = map[string]key{}
 
 func parseToken(signedToken string) (*UserClaims, error) {
 	t, err := jwt.ParseWithClaims(signedToken, &UserClaims{}, func(t *jwt.Token) (interface{}, error) {
@@ -103,7 +128,17 @@ func parseToken(signedToken string) (*UserClaims, error) {
 			return nil, fmt.Errorf("Invalid signing algorithm!")
 		}
 
-		return key, nil
+		kid, ok := t.Header["kid"].(string)
+		if !ok {
+			return nil, fmt.Errorf("Invalid key ID!")
+		}
+
+		k, ok := keys[kid]
+		if !ok {
+			return nil, fmt.Errorf("!!Invalid key ID!")
+		}
+
+		return k.key, nil
 	})
 
 	if err != nil {
