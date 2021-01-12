@@ -21,8 +21,8 @@ type user struct {
 }
 
 var oauth = &oauth2.Config{
-	ClientID:     "amzn1.application-oa2-client.c9ef4783bebc462bbdd936599e2bedf2",
-	ClientSecret: "a1efd4e239aad227419efbee83c2b3ab2f5b0c49a17a13a340445fd78fbe350f",
+	ClientID:     "amzn1.application-oa2-client.xxxxxxxxxxxxxxxxxx",
+	ClientSecret: "xxxxxxxxxxxxxxxxxx",
 	Endpoint:     amazon.Endpoint,
 	RedirectURL:  "http://localhost:8080/oauth/amazon/receive",
 	Scopes:       []string{"profile"},

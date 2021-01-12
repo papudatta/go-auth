@@ -24,8 +24,8 @@ type githubResponse struct {
 }
 
 var githubOauthConfig = &oauth2.Config{
-	ClientID:     "c2b66a5f140b29b1eb5b",
-	ClientSecret: "11a1f2ada6a337f84680689feee3043933a7922f",
+	ClientID:     "xxxxxxxxxxxxxxxxxx",
+	ClientSecret: "xxxxxxxxxxxxxxxxxx",
 	Endpoint:     github.Endpoint,
 }
 
